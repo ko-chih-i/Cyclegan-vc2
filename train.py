@@ -10,6 +10,7 @@ import torch
 import time
 import librosa
 import pickle
+import soundfile as sf
 
 import preprocess
 from trainingDataset import trainingDataset
@@ -32,7 +33,7 @@ class CycleGANTraining(object):
                  output_B_dir,
                  restart_training_at=None):
         self.start_epoch = 0
-        self.num_epochs = 200000  # 5000
+        self.num_epochs = 3  # 5000
         self.mini_batch_size = 1  # 1
         self.dataset_A = self.loadPickleFile(coded_sps_A_norm)
         self.dataset_B = self.loadPickleFile(coded_sps_B_norm)
@@ -355,10 +356,10 @@ class CycleGANTraining(object):
                                                                 ap=ap,
                                                                 fs=sampling_rate,
                                                                 frame_period=frame_period)
-            librosa.output.write_wav(path=os.path.join(output_A_dir, os.path.basename(file)),
-                                     y=wav_transformed,
-                                     sr=sampling_rate)
-
+            
+            sf.write(file=os.path.join(output_A_dir, os.path.basename(file)),
+                    data=wav_transformed,
+                    samplerate=sampling_rate)
     def validation_for_B_dir(self):
         num_mcep = 36
         sampling_rate = 16000
@@ -408,9 +409,9 @@ class CycleGANTraining(object):
                                                                 ap=ap,
                                                                 fs=sampling_rate,
                                                                 frame_period=frame_period)
-            librosa.output.write_wav(path=os.path.join(output_B_dir, os.path.basename(file)),
-                                     y=wav_transformed,
-                                     sr=sampling_rate)
+            sf.write(file=os.path.join(output_B_dir, os.path.basename(file)),
+                    data=wav_transformed,
+                    samplerate=sampling_rate)
 
     def savePickle(self, variable, fileName):
         with open(fileName, 'wb') as f:
@@ -459,22 +460,23 @@ class CycleGANTraining(object):
 
 
 if __name__ == '__main__':
+  
     parser = argparse.ArgumentParser(
         description="Train CycleGAN using source dataset and target dataset")
 
-    logf0s_normalization_default = './cache/logf0s_normalization.npz'
-    mcep_normalization_default = './cache/mcep_normalization.npz'
-    coded_sps_A_norm = './cache/coded_sps_A_norm.pickle'
-    coded_sps_B_norm = './cache/coded_sps_B_norm.pickle'
+    logf0s_normalization_default = '/content/drive/MyDrive/out/logf0s_normalization.npz'
+    mcep_normalization_default = '/content/drive/MyDrive/out/mcep_normalization.npz'
+    coded_sps_A_norm = '/content/drive/MyDrive/out/coded_sps_A_norm.pickle'
+    coded_sps_B_norm = '/content/drive/MyDrive/out/coded_sps_B_norm.pickle'
     model_checkpoint = './model_checkpoint/'
-    resume_training_at = './model_checkpoint/_CycleGAN_CheckPoint'
-    #     resume_training_at = None
+    resume_training_at = None
 
-    validation_A_dir_default = './data/S0913/'
-    output_A_dir_default = './converted_sound/S0913'
+    validation_A_dir_default = '/content/drive/MyDrive/LJSpeech/validation'
+    output_A_dir_default = '/content/drive/MyDrive/converted_sound/LJSpeech'
 
-    validation_B_dir_default = './data/gaoxiaosong/'
-    output_B_dir_default = './converted_sound/gaoxiaosong/'
+    validation_B_dir_default = '/content/drive/MyDrive/VCC2SF2/validation'
+    output_B_dir_default = '/content/drive/MyDrive/converted_sound/VCC2SF2'
+
 
     parser.add_argument('--logf0s_normalization', type=str,
                         help="Cached location for log f0s normalized", default=logf0s_normalization_default)
@@ -528,3 +530,5 @@ if __name__ == '__main__':
                                 output_B_dir=output_B_dir,
                                 restart_training_at=resume_training_at)
     cycleGAN.train()
+    cycleGAN.validation_for_A_dir()
+    cycleGAN.validation_for_B_dir()
